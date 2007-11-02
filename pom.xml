@@ -63,10 +63,10 @@
     </repository>
   </distributionManagement>
 
-  <!--scm>
-    <connection         >scm:svn:https://svn.apache.org/repos/asf/maven/sandbox/wagon-scm/</connection>
-    <developerConnection>scm:svn:https://svn.apache.org/repos/asf/maven/sandbox/wagon-scm/</developerConnection>
-  </scm-->
+  <scm>
+    <connection         >scm:svn:https://svn.dev.java.net/svn/wagon-svn/trunk/wagon-svn/</connection>
+    <developerConnection>scm:svn:https://svn.dev.java.net/svn/wagon-svn/trunk/wagon-svn/</developerConnection>
+  </scm>
 
   <dependencies>
     <dependency>
