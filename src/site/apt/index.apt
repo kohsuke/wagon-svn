@@ -20,7 +20,7 @@ Usage
 
 --------------------------------------------
   <build>
-  ...
+    ...
     <extensions>
       <extension>
         <groupId>org.jvnet.wagon-svn</groupId>
@@ -30,14 +30,14 @@ Usage
     </extensions>
   </build>
 
-  <pluginRepositories>
+  <repositories>
     ...
     <repository>
       <id>maven2-repository.dev.java.net</id>
       <name>Java.net Repository for Maven</name>
       <url>http://download.java.net/maven/2/</url>
     </repository>
-  </pluginRepositories>
+  </repositories>
 --------------------------------------------
 
     This enables the wagon-svn module for your build. If your project is a multi-module project,
