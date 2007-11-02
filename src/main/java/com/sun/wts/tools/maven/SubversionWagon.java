@@ -130,9 +130,14 @@ public class SubversionWagon extends AbstractWagon {
 
     protected void closeConnection() throws ConnectionException {
         try {
+            // beware that Maven often calls this method without first opening the connection
+
             // commit
-            editor.closeDir();
-            editor.closeEdit();
+            if(editor!=null) {
+                editor.closeDir();
+                editor.closeEdit();
+                editor = null;
+            }
             
             if(queryRepo !=null)
                 queryRepo.closeSession();
