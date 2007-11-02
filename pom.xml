@@ -58,9 +58,12 @@
     <repository>
       <uniqueVersion>false</uniqueVersion>
       <id>local-repository</id>
-      <!--url>svn:http://svn.dev.java.net/svn/maven2-repository/trunk/www/repository/</url-->
-      <url>svn:/home/kohsuke/ws/maven/wagon-svn/test-repo/foo/bar/zot</url>
+      <url>file:${path-to-m2-repo.java.net}</url>
     </repository>
+    <site>
+      <id>local</id>
+      <url>file:../www/</url>
+    </site>
   </distributionManagement>
 
   <scm>
