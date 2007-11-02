@@ -39,6 +39,8 @@ import org.apache.maven.wagon.AbstractWagon;
 import org.apache.maven.wagon.ConnectionException;
 import org.apache.maven.wagon.ResourceDoesNotExistException;
 import org.apache.maven.wagon.TransferFailedException;
+import org.apache.maven.wagon.resource.Resource;
+import org.apache.maven.wagon.events.TransferEvent;
 import org.apache.maven.wagon.authentication.AuthenticationException;
 import org.apache.maven.wagon.authorization.AuthorizationException;
 import org.apache.maven.wagon.repository.Repository;
@@ -80,9 +82,15 @@ public class SubversionWagon extends AbstractWagon {
             svnrepo = SVNRepositoryFactory.create(repoUrl);
 
             // when URL is given like http://svn.dev.java.net/svn/abc/trunk/xyz, we need to compute
-            // repositoryRoot=http://svn.dev.java.net/abc and rootPath=trunk/xyz
+            // repositoryRoot=http://svn.dev.java.net/abc and rootPath=/trunk/xyz
             rootPath = repoUrl.getPath().substring(svnrepo.getRepositoryRoot(true).getPath().length());
             if(rootPath.startsWith("/"))    rootPath=rootPath.substring(1);
+
+            // at least in case of file:// URL, the commit editor remembers the root path
+            // portion and that interferes with the way we work, so re-open the repository
+            // with the correct root.
+            svnrepo = SVNRepositoryFactory.create(svnrepo.getRepositoryRoot());
+
         } catch (SVNException e) {
             throw new ConnectionException("Unable to connect to "+url,e);
         }
@@ -99,7 +107,11 @@ public class SubversionWagon extends AbstractWagon {
     }
 
     public void get(String resourceName, File destination) throws TransferFailedException, ResourceDoesNotExistException, AuthorizationException {
+        Resource res = new Resource( resourceName );
         try {
+            fireGetInitiated( res, destination );
+            fireGetStarted( res, destination );
+
             Map m = new HashMap();
             FileOutputStream fos = new FileOutputStream(destination);
             try {
@@ -107,6 +119,9 @@ public class SubversionWagon extends AbstractWagon {
             } finally {
                 fos.close();
             }
+
+            postProcessListeners( res, destination, TransferEvent.REQUEST_GET );
+            fireGetCompleted( res, destination );
         } catch (SVNException e) {
             throw new ResourceDoesNotExistException("Unable to find "+resourceName+" in "+getRepository().getUrl(),e);
         } catch (IOException e) {
@@ -133,23 +148,29 @@ public class SubversionWagon extends AbstractWagon {
             r.add(0,svnrepo.info(path,-1)); // push front
 
             int idx = path.lastIndexOf('/');
-            if(idx<0)   return r;
+            if(idx<=0)   return r;
             path = path.substring(0,idx);
         }
     }
 
     public void put(File source, String destination) throws TransferFailedException, ResourceDoesNotExistException, AuthorizationException {
         destination = combine(rootPath,destination);
-        
+        Resource res = new Resource(destination);
+
+        firePutInitiated(res,source);
+        firePutStarted(res,source);
+
         try {
             // obtain dir entries before we start committing
             List<SVNDirEntry> infoList = buildInfoList(destination);
 
             ISVNEditor editor = svnrepo.getCommitEditor("Commiting from wagon-svn", new CommitMediator());
             editor.openRoot(-1);
-            put(source,"", infoList.iterator(),editor,destination);
+            put(source,"/", infoList.iterator(),editor,destination);
             editor.closeDir();
             editor.closeEdit();
+
+            firePutCompleted(res,source);
         } catch (SVNException e) {
             throw new TransferFailedException("Failed to write to "+destination,e);
         } catch (IOException e) {
@@ -157,6 +178,25 @@ public class SubversionWagon extends AbstractWagon {
         }
     }
 
+    /**
+     * The way {@link ISVNEditor} works is to recursively open a sub-directory,
+     * so this is implemented as a recursion.
+     *
+     * @param source
+     *      The file to be uploaded.
+     * @param path
+     *      The current directory in SVN that we are in. String like "/foo/bar/zot"
+     * @param infoList
+     *      To determine whether we need to simply open an existing directory or add a new one
+     *      depends on whether it already exists. Since we can't do "svn info" while
+     *      working on a commit, this list is pre-obtained. Passed as an iterator because
+     *      we just need to use it like a stack.
+     * @param editor
+     *      The listener to receive what we are uploading.
+     * @param destination
+     *      Path relative to the 'path' parameter indicating where to upload. String like
+     *      "abc/def/ghi"
+     */
     private void put(File source, String path, Iterator<SVNDirEntry> infoList, ISVNEditor editor, String destination) throws SVNException, IOException {
         int idx = destination.indexOf('/');
         if(idx>0) {
