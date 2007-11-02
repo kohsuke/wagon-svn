@@ -1,11 +1,3 @@
-------
-Wagon Subversion
-------
-Kohsuke Kawaguchi
-------
-November 2, 2007
-------
-
 What is this?
 
     This extension module to Maven allows you to deploy artifacts and sites to Subversion repository.
