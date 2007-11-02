@@ -21,9 +21,8 @@
   </distributionManagement>
 
   <scm>
-    <connection>scm:svn:https://svn.apache.org/repos/asf/maven/wagon/tags/wagon-svn-1.0</connection>
-    <developerConnection>scm:svn:https://svn.apache.org/repos/asf/maven/wagon/tags/wagon-svn-1.0</developerConnection>
-    <url>scm:svn:https://svn.apache.org/repos/asf/maven/wagon/tags/wagon-svn-1.0</url>
+    <connection>scm:svn:https://svn.dev.java.net/svn/wagon-svn/trunk/wagon-svn/</connection>
+    <developerConnection>scm:svn:https://svn.dev.java.net/svn/wagon-svn/trunk/wagon-svn/</developerConnection>
   </scm>
 
   <dependencies>
