@@ -48,6 +48,7 @@ import org.apache.maven.wagon.resource.Resource;
 import org.tmatesoft.svn.core.SVNDirEntry;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.wc.SVNWCUtil;
 import org.tmatesoft.svn.core.internal.io.dav.DAVRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl;
@@ -55,6 +56,7 @@ import org.tmatesoft.svn.core.io.ISVNEditor;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
 import org.tmatesoft.svn.core.io.diff.SVNDeltaGenerator;
+import org.codehaus.plexus.util.FileUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -64,6 +66,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.List;
 
 /**
  * {@link Wagon} implementation for Subvesrion repository.
@@ -104,6 +107,7 @@ public class SubversionWagon extends AbstractWagon {
         try {
             SVNURL repoUrl = SVNURL.parseURIDecoded(url);
             queryRepo = SVNRepositoryFactory.create(repoUrl);
+            queryRepo.setAuthenticationManager(SVNWCUtil.createDefaultAuthenticationManager());
 
             // when URL is given like http://svn.dev.java.net/svn/abc/trunk/xyz, we need to compute
             // repositoryRoot=http://svn.dev.java.net/abc and rootPath=/trunk/xyz
@@ -118,6 +122,7 @@ public class SubversionWagon extends AbstractWagon {
 
             // open another one for commit
             commitRepo = SVNRepositoryFactory.create(repoRoot);
+            commitRepo.setAuthenticationManager(SVNWCUtil.createDefaultAuthenticationManager());
 
             // prepare a commit
             editor = commitRepo.getCommitEditor("Upload by wagon-svn", new CommitMediator());
@@ -130,9 +135,14 @@ public class SubversionWagon extends AbstractWagon {
 
     protected void closeConnection() throws ConnectionException {
         try {
+            // beware that Maven often calls this method without first opening the connection
+
             // commit
-            editor.closeDir();
-            editor.closeEdit();
+            if(editor!=null) {
+                editor.closeDir();
+                editor.closeEdit();
+                editor = null;
+            }
             
             if(queryRepo !=null)
                 queryRepo.closeSession();
@@ -214,7 +224,7 @@ public class SubversionWagon extends AbstractWagon {
      *      Path relative to the 'path' parameter indicating where to upload. String like
      */
     private void put(File source, String path, ISVNEditor editor, String destination) throws SVNException, IOException {
-        pathAdded.add(path);
+        pathAdded.add(normalize(path));
         int idx = destination.indexOf('/');
         if(idx>0) {
             String head = destination.substring(0,idx);
@@ -222,7 +232,7 @@ public class SubversionWagon extends AbstractWagon {
 
             String child = combine(path, head);
 
-            if(queryRepo.info(child,-1)!=null || pathAdded.contains(child))
+            if(queryRepo.info(child,-1)!=null || pathAdded.contains(normalize(child)))
                 // directory exists
                 editor.openDir(child,-1);
             else
@@ -235,7 +245,7 @@ public class SubversionWagon extends AbstractWagon {
             String filePath = combine(path, destination);
 
             // file
-            if(queryRepo.info(filePath,-1)!=null || pathAdded.contains(filePath))
+            if(queryRepo.info(filePath,-1)!=null || pathAdded.contains(normalize(filePath)))
                 // update file
                 editor.openFile(filePath,-1);
             else
@@ -256,9 +266,36 @@ public class SubversionWagon extends AbstractWagon {
         }
     }
 
+    public boolean supportsDirectoryCopy() {
+        return true;
+    }
+
+    public void putDirectory(File sourceDirectory, String destinationDirectory) throws TransferFailedException, ResourceDoesNotExistException, AuthorizationException {
+        try {
+            List<String> files = FileUtils.getFileNames( sourceDirectory, "**/**", "", false );
+
+            for (String file : files)
+                put(new File(sourceDirectory,file),combine(destinationDirectory,file));
+        } catch (IOException e) {
+            throw new TransferFailedException("Failed to list up files in "+sourceDirectory,e);
+        }
+    }
+
     private String combine(String head, String tail) {
         if(head.length()==0)    return tail;
         return head+'/'+tail;
+    }
+
+    /**
+     * Either svnkit or Maven messes up and often uses '//' where '/' is suffice,
+     * so this method is to clean that up.
+     */
+    private String normalize(String str) {
+        while(true) {
+            int idx = str.indexOf("//");
+            if(idx<0)   return str;
+            str = str.substring(0,idx)+str.substring(idx+1);
+        }
     }
 
     static {
