@@ -164,12 +164,13 @@ public class SubversionWagon extends AbstractWagon {
             // obtain dir entries before we start committing
             List<SVNDirEntry> infoList = buildInfoList(destination);
 
-            ISVNEditor editor = svnrepo.getCommitEditor("Commiting from wagon-svn", new CommitMediator());
+            ISVNEditor editor = svnrepo.getCommitEditor("Uploading "+destination+" by wagon-svn", new CommitMediator());
             editor.openRoot(-1);
             put(source,"/", infoList.iterator(),editor,destination);
             editor.closeDir();
             editor.closeEdit();
 
+            postProcessListeners( res, source, TransferEvent.REQUEST_PUT );
             firePutCompleted(res,source);
         } catch (SVNException e) {
             throw new TransferFailedException("Failed to write to "+destination,e);
