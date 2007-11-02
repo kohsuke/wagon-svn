@@ -45,6 +45,9 @@ import org.apache.maven.wagon.repository.Repository;
 import org.tmatesoft.svn.core.SVNDirEntry;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.io.dav.DAVRepositoryFactory;
+import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl;
+import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.io.ISVNEditor;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
@@ -65,6 +68,7 @@ import java.util.Map;
  */
 public class SubversionWagon extends AbstractWagon {
     private SVNRepository svnrepo;
+    private String rootPath;
 
     public void openConnection() throws ConnectionException, AuthenticationException {
         Repository r = getRepository();
@@ -72,7 +76,13 @@ public class SubversionWagon extends AbstractWagon {
         url = url.substring(4); // cut off "svn:"
 
         try {
-            svnrepo = SVNRepositoryFactory.create(SVNURL.parseURIDecoded(url));
+            SVNURL repoUrl = SVNURL.parseURIDecoded(url);
+            svnrepo = SVNRepositoryFactory.create(repoUrl);
+
+            // when URL is given like http://svn.dev.java.net/svn/abc/trunk/xyz, we need to compute
+            // repositoryRoot=http://svn.dev.java.net/abc and rootPath=trunk/xyz
+            rootPath = repoUrl.getPath().substring(svnrepo.getRepositoryRoot(true).getPath().length());
+            if(rootPath.startsWith("/"))    rootPath=rootPath.substring(1);
         } catch (SVNException e) {
             throw new ConnectionException("Unable to connect to "+url,e);
         }
@@ -93,7 +103,7 @@ public class SubversionWagon extends AbstractWagon {
             Map m = new HashMap();
             FileOutputStream fos = new FileOutputStream(destination);
             try {
-                svnrepo.getFile(resourceName,-1/*head*/,m, fos);
+                svnrepo.getFile(combine(rootPath,resourceName),-1/*head*/,m, fos);
             } finally {
                 fos.close();
             }
@@ -106,7 +116,7 @@ public class SubversionWagon extends AbstractWagon {
 
     public boolean getIfNewer(String resourceName, File destination, long timestamp) throws TransferFailedException, ResourceDoesNotExistException, AuthorizationException {
         try {
-            SVNDirEntry e = svnrepo.info(resourceName, -1/*head*/);
+            SVNDirEntry e = svnrepo.info(combine(rootPath,resourceName), -1/*head*/);
             if( e.getDate().getTime() < timestamp )
                 return false;   // older
 
@@ -129,10 +139,15 @@ public class SubversionWagon extends AbstractWagon {
     }
 
     public void put(File source, String destination) throws TransferFailedException, ResourceDoesNotExistException, AuthorizationException {
+        destination = combine(rootPath,destination);
+        
         try {
+            // obtain dir entries before we start committing
+            List<SVNDirEntry> infoList = buildInfoList(destination);
+
             ISVNEditor editor = svnrepo.getCommitEditor("Commiting from wagon-svn", new CommitMediator());
             editor.openRoot(-1);
-            put(source,"",buildInfoList(destination).iterator(),editor,destination);
+            put(source,"", infoList.iterator(),editor,destination);
             editor.closeDir();
             editor.closeEdit();
         } catch (SVNException e) {
@@ -187,5 +202,11 @@ public class SubversionWagon extends AbstractWagon {
     private String combine(String head, String tail) {
         if(head.length()==0)    return tail;
         return head+'/'+tail;
+    }
+
+    static {
+        DAVRepositoryFactory.setup();   // http, https
+        SVNRepositoryFactoryImpl.setup();   // svn, svn+xxx
+        FSRepositoryFactory.setup();    // file
     }
 }
