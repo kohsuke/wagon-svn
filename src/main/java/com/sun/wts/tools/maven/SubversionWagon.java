@@ -45,10 +45,11 @@ import org.apache.maven.wagon.authorization.AuthorizationException;
 import org.apache.maven.wagon.events.TransferEvent;
 import org.apache.maven.wagon.repository.Repository;
 import org.apache.maven.wagon.resource.Resource;
+import org.codehaus.plexus.util.FileUtils;
 import org.tmatesoft.svn.core.SVNDirEntry;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.wc.SVNWCUtil;
+import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.internal.io.dav.DAVRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl;
@@ -56,17 +57,17 @@ import org.tmatesoft.svn.core.io.ISVNEditor;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
 import org.tmatesoft.svn.core.io.diff.SVNDeltaGenerator;
-import org.codehaus.plexus.util.FileUtils;
+import org.tmatesoft.svn.core.wc.SVNWCUtil;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * {@link Wagon} implementation for Subvesrion repository.
@@ -107,7 +108,7 @@ public class SubversionWagon extends AbstractWagon {
         try {
             SVNURL repoUrl = SVNURL.parseURIDecoded(url);
             queryRepo = SVNRepositoryFactory.create(repoUrl);
-            queryRepo.setAuthenticationManager(SVNWCUtil.createDefaultAuthenticationManager());
+            configureAuthenticationManager(queryRepo);
 
             // when URL is given like http://svn.dev.java.net/svn/abc/trunk/xyz, we need to compute
             // repositoryRoot=http://svn.dev.java.net/abc and rootPath=/trunk/xyz
@@ -122,7 +123,7 @@ public class SubversionWagon extends AbstractWagon {
 
             // open another one for commit
             commitRepo = SVNRepositoryFactory.create(repoRoot);
-            commitRepo.setAuthenticationManager(SVNWCUtil.createDefaultAuthenticationManager());
+            configureAuthenticationManager(commitRepo);
 
             // prepare a commit
             editor = commitRepo.getCommitEditor("Upload by wagon-svn", new CommitMediator());
@@ -131,6 +132,14 @@ public class SubversionWagon extends AbstractWagon {
         } catch (SVNException e) {
             throw new ConnectionException("Unable to connect to "+url,e);
         }
+    }
+
+    private void configureAuthenticationManager(SVNRepository repo) {
+        ISVNAuthenticationManager manager = SVNWCUtil.createDefaultAuthenticationManager();
+        // TODO: figure out how to access MavenSession
+//        if(session.getSettings().isInteractiveMode())
+            manager.setAuthenticationProvider(new SVNConsoleAuthenticationProvider());
+        repo.setAuthenticationManager(manager);
     }
 
     protected void closeConnection() throws ConnectionException {
