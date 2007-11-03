@@ -15,6 +15,10 @@
   <body>
     <menu name="Wagon Subversion">
       <item name="Usage" href="index.html"/>
+
+      <item name="Mailing lists" href="servlets/ProjectMailingListList"/>
+      <item name="Source code" href="source/browse/trunk/wagon-svn/"/>
+      <item name="Issues" href="servlets/ProjectIssues"/>
     </menu>
     ${reports}
   </body>
