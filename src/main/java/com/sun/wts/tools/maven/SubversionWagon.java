@@ -243,10 +243,15 @@ public class SubversionWagon extends AbstractWagon {
 
             String child = combine(path, head);
 
-            if(exists(child) || pathAdded.contains(normalize(child)))
+            if(exists(child) || pathAdded.contains(normalize(child))) {
                 // directory exists
-                editor.openDir(child,-1);
-            else
+                try {
+                    editor.openDir(child,-1);
+                } catch (SVNException e) {
+                    // in case it fails, try to fall back to add
+                    editor.addDir(child,null,-1);
+                }
+            } else
                 // directory doesn't exist
                 editor.addDir(child,null,-1);
 
