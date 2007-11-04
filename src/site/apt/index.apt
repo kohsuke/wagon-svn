@@ -72,7 +72,7 @@ Usage
   <distributionManagement>
     <repository>
       <uniqueVersion>false</uniqueVersion>
-      <id>local-repository</id>
+      <id>java.net-maven2-repository</id>
       <url>svn:https://svn.dev.java.net/svn/maven2-repository/trunk/www/repository/</url>
     </repository>
     ...
