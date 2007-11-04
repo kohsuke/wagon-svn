@@ -81,9 +81,3 @@ Usage
 
     This causes "<<<mvn deploy>>>" and "<<<mvn release:perform>>>" to deploy artifacts
     to the java.net maven2 repository.
-
-* Authentication
-
-    If you are using wagon-svn with a repository that requires an authentication (including java.net),
-    please first use the command line subversion client and store the credential. Wagon-svn
-    reads your authentication information from there.

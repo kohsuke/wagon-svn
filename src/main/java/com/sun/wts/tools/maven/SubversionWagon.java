@@ -138,7 +138,7 @@ public class SubversionWagon extends AbstractWagon {
         ISVNAuthenticationManager manager = SVNWCUtil.createDefaultAuthenticationManager();
         // TODO: figure out how to access MavenSession
 //        if(session.getSettings().isInteractiveMode())
-            manager.setAuthenticationProvider(new SVNConsoleAuthenticationProvider());
+        manager.setAuthenticationProvider(new SVNConsoleAuthenticationProvider());
         repo.setAuthenticationManager(manager);
     }
 
@@ -292,6 +292,8 @@ public class SubversionWagon extends AbstractWagon {
 
     private String combine(String head, String tail) {
         if(head.length()==0)    return tail;
+        if(head.endsWith("/"))  head=head.substring(0,head.length()-1);
+        if(tail.startsWith("/"))  tail=tail.substring(1);
         return head+'/'+tail;
     }
 
