@@ -53,11 +53,13 @@ import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.internal.io.dav.DAVRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl;
+import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
 import org.tmatesoft.svn.core.io.ISVNEditor;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
 import org.tmatesoft.svn.core.io.diff.SVNDeltaGenerator;
 import org.tmatesoft.svn.core.wc.SVNWCUtil;
+import org.tmatesoft.svn.core.wc.ISVNOptions;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -135,7 +137,9 @@ public class SubversionWagon extends AbstractWagon {
     }
 
     private void configureAuthenticationManager(SVNRepository repo) {
-        ISVNAuthenticationManager manager = SVNWCUtil.createDefaultAuthenticationManager();
+        ISVNAuthenticationManager manager = SVNWCUtil.createDefaultAuthenticationManager(
+            SVNWCUtil.getDefaultConfigurationDirectory(), null, null, true);
+        
         // TODO: figure out how to access MavenSession
 //        if(session.getSettings().isInteractiveMode())
         manager.setAuthenticationProvider(new SVNConsoleAuthenticationProvider());
