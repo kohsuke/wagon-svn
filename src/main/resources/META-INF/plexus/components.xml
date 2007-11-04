@@ -41,7 +41,6 @@
       <role-hint>svn</role-hint>
       <implementation>com.sun.wts.tools.maven.SubversionWagon</implementation>
       <instantiation-strategy>per-lookup</instantiation-strategy>
-      <requirements />
     </component>
   </components>
 </component-set>
