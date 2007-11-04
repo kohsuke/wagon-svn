@@ -243,7 +243,7 @@ public class SubversionWagon extends AbstractWagon {
 
             String child = combine(path, head);
 
-            if(queryRepo.info(child,-1)!=null || pathAdded.contains(normalize(child)))
+            if(exists(child) || pathAdded.contains(normalize(child)))
                 // directory exists
                 editor.openDir(child,-1);
             else
@@ -256,7 +256,7 @@ public class SubversionWagon extends AbstractWagon {
             String filePath = combine(path, destination);
 
             // file
-            if(queryRepo.info(filePath,-1)!=null || pathAdded.contains(normalize(filePath)))
+            if(exists(filePath) || pathAdded.contains(normalize(filePath)))
                 // update file
                 editor.openFile(filePath,-1);
             else
@@ -274,6 +274,15 @@ public class SubversionWagon extends AbstractWagon {
                 fin.close();
             }
             editor.closeFile(filePath,checksum);
+        }
+    }
+
+    private boolean exists(String child) throws SVNException {
+        try {
+            return queryRepo.info(child,-1)!=null;
+        } catch (SVNException e) {
+            // https:// protocol reports an error whereas it should return null
+            return false;
         }
     }
 
