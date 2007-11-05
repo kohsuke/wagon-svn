@@ -84,7 +84,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
 
     public int acceptServerAuthentication(SVNURL url, String realm, Object certificate, boolean resultMayBeStored) {
         if (!(certificate instanceof X509Certificate) || !isInteractive) {
-            return ISVNAuthenticationProvider.ACCEPTED_TEMPORARY;
+            return ACCEPTED_TEMPORARY;
         }
 
         String hostName = url.getHost();
@@ -102,18 +102,18 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
             try {
                 r = System.in.read();
                 if (r < 0) {
-                    return ISVNAuthenticationProvider.REJECTED;
+                    return REJECTED;
                 }
                 char ch = (char) (r & 0xFF);
                 if (ch == 'R' || ch == 'r') {
-                    return ISVNAuthenticationProvider.REJECTED;
+                    return REJECTED;
                 } else if (ch == 't' || ch == 'T') {
-                    return ISVNAuthenticationProvider.ACCEPTED_TEMPORARY;
+                    return ACCEPTED_TEMPORARY;
                 } else if (resultMayBeStored && (ch == 'p' || ch == 'P')) {
-                    return ISVNAuthenticationProvider.ACCEPTED;
+                    return ACCEPTED;
                 }
             } catch (IOException e) {
-                return ISVNAuthenticationProvider.REJECTED;
+                return REJECTED;
             }
         }
     }

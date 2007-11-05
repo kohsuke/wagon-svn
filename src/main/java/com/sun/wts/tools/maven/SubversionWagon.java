@@ -50,6 +50,7 @@ import org.tmatesoft.svn.core.SVNDirEntry;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
+import org.tmatesoft.svn.core.auth.ISVNAuthenticationProvider;
 import org.tmatesoft.svn.core.internal.io.dav.DAVRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl;
@@ -146,9 +147,16 @@ public class SubversionWagon extends AbstractWagon {
         ISVNAuthenticationManager manager = SVNWCUtil.createDefaultAuthenticationManager(
             SVNWCUtil.getDefaultConfigurationDirectory(), null, null, true);
 
-        manager.setAuthenticationProvider(new SVNConsoleAuthenticationProvider(
-            isInteractive(), getAuthenticationInfo()));
+        manager.setAuthenticationProvider(createAuthenticationProvider());
         repo.setAuthenticationManager(manager);
+    }
+
+    /**
+     * Creates an {@link ISVNAuthenticationProvider} to use.
+     */
+    protected ISVNAuthenticationProvider createAuthenticationProvider() {
+        return new SVNConsoleAuthenticationProvider(
+            isInteractive(), getAuthenticationInfo());
     }
 
     protected void closeConnection() throws ConnectionException {
