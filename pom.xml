@@ -62,4 +62,9 @@
       </plugin>
     </plugins>
   </build>
+
+  <!--
+    TODO: mvn forked by "mvn release:perform" doesn't get interactive System.in. So we need a better authentication
+    story.
+  -->
 </project>
