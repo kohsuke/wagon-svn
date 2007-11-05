@@ -137,10 +137,9 @@ public class SubversionWagon extends AbstractWagon {
     private void configureAuthenticationManager(SVNRepository repo) {
         ISVNAuthenticationManager manager = SVNWCUtil.createDefaultAuthenticationManager(
             SVNWCUtil.getDefaultConfigurationDirectory(), null, null, true);
-        
-        // TODO: figure out how to access MavenSession
-//        if(session.getSettings().isInteractiveMode())
-        manager.setAuthenticationProvider(new SVNConsoleAuthenticationProvider());
+
+        manager.setAuthenticationProvider(new SVNConsoleAuthenticationProvider(
+            isInteractive(), getAuthenticationInfo()));
         repo.setAuthenticationManager(manager);
     }
 

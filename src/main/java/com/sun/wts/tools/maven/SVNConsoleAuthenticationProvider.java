@@ -49,12 +49,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.sun.wts.tools.maven;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.security.cert.X509Certificate;
-
+import org.apache.maven.wagon.authentication.AuthenticationInfo;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
@@ -65,6 +60,12 @@ import org.tmatesoft.svn.core.auth.SVNSSHAuthentication;
 import org.tmatesoft.svn.core.auth.SVNSSLAuthentication;
 import org.tmatesoft.svn.core.auth.SVNUserNameAuthentication;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.security.cert.X509Certificate;
+
 
 /**
  * @version 1.0
@@ -72,10 +73,20 @@ import org.tmatesoft.svn.core.auth.SVNUserNameAuthentication;
  */
 public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvider {
 
+    private final boolean isInteractive;
+
+    private final AuthenticationInfo auth;
+
+    public SVNConsoleAuthenticationProvider(boolean interactive, AuthenticationInfo auth) {
+        this.isInteractive = interactive;
+        this.auth = auth;
+    }
+
     public int acceptServerAuthentication(SVNURL url, String realm, Object certificate, boolean resultMayBeStored) {
-        if (!(certificate instanceof X509Certificate)) {
+        if (!(certificate instanceof X509Certificate) || !isInteractive) {
             return ISVNAuthenticationProvider.ACCEPTED_TEMPORARY;
         }
+
         String hostName = url.getHost();
         X509Certificate cert = (X509Certificate) certificate;
         StringBuffer prompt = SVNSSLUtil.getServerCertificatePrompt(cert, realm, hostName);
@@ -86,7 +97,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
         }
         System.out.print(prompt.toString());
         System.out.flush();
-        int r = -1;
+        int r;
         while(true) {
             try {
                 r = System.in.read();
@@ -109,6 +120,9 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
 
     public SVNAuthentication requestClientAuthentication(String kind, SVNURL url, String realm, SVNErrorMessage errorMessage, SVNAuthentication previousAuth, boolean authMayBeStored) {
         if (ISVNAuthenticationManager.PASSWORD.equals(kind)) {
+            if(auth!=null)
+                return new SVNPasswordAuthentication(auth.getUserName(),auth.getPassword(),authMayBeStored);
+
             String name = null;
             printRealm(realm);
             while(name == null) {
@@ -123,6 +137,13 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
             }
             return new SVNPasswordAuthentication(name, password, authMayBeStored);
         } else if (ISVNAuthenticationManager.SSH.equals(kind)) {
+            if(auth!=null) {
+                if(auth.getPassword()!=null)
+                    return new SVNSSHAuthentication(auth.getUserName(),auth.getPassword(),22,authMayBeStored);
+                if(auth.getPrivateKey()!=null)
+                    return new SVNSSHAuthentication(auth.getUserName(),new File(auth.getPrivateKey()),auth.getPassphrase(),22,authMayBeStored);
+            }
+
             String name = null;
             printRealm(realm);
             while(name == null) {
@@ -166,6 +187,9 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
                 return new SVNSSHAuthentication(name, new File(keyFile), passphrase, port, authMayBeStored);
             }
         } else if (ISVNAuthenticationManager.USERNAME.equals(kind)) {
+            if(auth!=null)
+                return new SVNUserNameAuthentication(auth.getUserName(),authMayBeStored);
+
             printRealm(realm);
             String name = null;
             while(name == null) {
@@ -202,7 +226,9 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
         }
     }
 
-    private static String prompt(String label) {
+    private String prompt(String label) {
+        if(!isInteractive)  return null;
+
         System.out.print(label + ": ");
         System.out.flush();
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
