@@ -70,7 +70,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * {@link Wagon} implementation for Subvesrion repository.
+ * {@link Wagon} implementation for Subversion repository.
  *
  * <h2>Implementation Note</h2>
  * <p>
@@ -101,9 +101,7 @@ public class SubversionWagon extends AbstractWagon {
     private final Set<String> pathAdded = new HashSet<String>();
 
     public void openConnection() throws ConnectionException, AuthenticationException {
-        Repository r = getRepository();
-        String url = r.getUrl();
-        url = url.substring(4); // cut off "svn:"
+        String url = getSubversionURL();
 
         try {
             SVNURL repoUrl = SVNURL.parseURIDecoded(url);
@@ -132,6 +130,16 @@ public class SubversionWagon extends AbstractWagon {
         } catch (SVNException e) {
             throw new ConnectionException("Unable to connect to "+url,e);
         }
+    }
+
+    /**
+     * Figures out the full subversion URL to connect to.
+     */
+    protected String getSubversionURL() {
+        Repository r = getRepository();
+        String url = r.getUrl();
+        url = url.substring(4); // cut off "svn:"
+        return url;
     }
 
     private void configureAuthenticationManager(SVNRepository repo) {
