@@ -81,3 +81,9 @@ Usage
 
     This causes "<<<mvn deploy>>>" and "<<<mvn release:perform>>>" to deploy artifacts
     to the java.net maven2 repository.
+
+* Authentication
+
+    Wagon-svn can take information necessary for authentication in two ways. First, you can specify this
+    in your {{{http://maven.apache.org/settings.html#Servers}~/.m2/settings.xml}}, just like you do with
+    wagon-ssh. Second, if Maven is launched interactively, wagon-svn will prompt you interactively.
