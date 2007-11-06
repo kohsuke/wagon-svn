@@ -50,9 +50,12 @@ import org.tmatesoft.svn.core.SVNDirEntry;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
+import org.tmatesoft.svn.core.auth.ISVNAuthenticationProvider;
+import org.tmatesoft.svn.core.auth.ISVNProxyManager;
 import org.tmatesoft.svn.core.internal.io.dav.DAVRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl;
+import org.tmatesoft.svn.core.internal.wc.DefaultSVNAuthenticationManager;
 import org.tmatesoft.svn.core.io.ISVNEditor;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
@@ -68,9 +71,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.EmptyStackException;
 
 /**
- * {@link Wagon} implementation for Subvesrion repository.
+ * {@link Wagon} implementation for Subversion repository.
  *
  * <h2>Implementation Note</h2>
  * <p>
@@ -101,9 +105,7 @@ public class SubversionWagon extends AbstractWagon {
     private final Set<String> pathAdded = new HashSet<String>();
 
     public void openConnection() throws ConnectionException, AuthenticationException {
-        Repository r = getRepository();
-        String url = r.getUrl();
-        url = url.substring(4); // cut off "svn:"
+        String url = getSubversionURL();
 
         try {
             SVNURL repoUrl = SVNURL.parseURIDecoded(url);
@@ -126,22 +128,55 @@ public class SubversionWagon extends AbstractWagon {
             configureAuthenticationManager(commitRepo);
 
             // prepare a commit
-            editor = commitRepo.getCommitEditor("Upload by wagon-svn", new CommitMediator());
+            ISVNEditor editor = commitRepo.getCommitEditor("Upload by wagon-svn", new CommitMediator());
             editor.openRoot(-1);
+            // if openRoot fails, Maven calls closeConnection anyway, so don't let the incorrect
+            // editor state show through.
+            this.editor = editor;
 
         } catch (SVNException e) {
             throw new ConnectionException("Unable to connect to "+url,e);
         }
     }
 
+    /**
+     * Figures out the full subversion URL to connect to.
+     */
+    protected String getSubversionURL() {
+        Repository r = getRepository();
+        String url = r.getUrl();
+        url = url.substring(4); // cut off "svn:"
+        return url;
+    }
+
     private void configureAuthenticationManager(SVNRepository repo) {
-        ISVNAuthenticationManager manager = SVNWCUtil.createDefaultAuthenticationManager(
-            SVNWCUtil.getDefaultConfigurationDirectory(), null, null, true);
-        
-        // TODO: figure out how to access MavenSession
-//        if(session.getSettings().isInteractiveMode())
-        manager.setAuthenticationProvider(new SVNConsoleAuthenticationProvider());
+        ISVNAuthenticationManager manager =
+            new DefaultSVNAuthenticationManager(SVNWCUtil.getDefaultConfigurationDirectory(), true, null, null, null, null) {
+
+                public ISVNProxyManager getProxyManager(SVNURL url) throws SVNException {
+                    ISVNProxyManager pm = super.getProxyManager(url);
+                    if(pm!=null)    return pm;
+                    return SubversionWagon.this.getProxyManager(url);
+                }
+            };
+
+        manager.setAuthenticationProvider(createAuthenticationProvider());
         repo.setAuthenticationManager(manager);
+    }
+
+    /**
+     * Gives the derived class a chance to set a proxy.
+     */
+    protected ISVNProxyManager getProxyManager(SVNURL url) {
+        return null;
+    }
+
+    /**
+     * Creates an {@link ISVNAuthenticationProvider} to use.
+     */
+    protected ISVNAuthenticationProvider createAuthenticationProvider() {
+        return new SVNConsoleAuthenticationProvider(
+            isInteractive(), getAuthenticationInfo());
     }
 
     protected void closeConnection() throws ConnectionException {
@@ -150,8 +185,12 @@ public class SubversionWagon extends AbstractWagon {
 
             // commit
             if(editor!=null) {
-                editor.closeDir();
-                editor.closeEdit();
+                try {
+                    editor.closeDir();
+                    editor.closeEdit();
+                } catch (EmptyStackException e) {
+                    e.printStackTrace(); // debug probe
+                }
                 editor = null;
             }
             
