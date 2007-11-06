@@ -51,9 +51,11 @@ import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationProvider;
+import org.tmatesoft.svn.core.auth.ISVNProxyManager;
 import org.tmatesoft.svn.core.internal.io.dav.DAVRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl;
+import org.tmatesoft.svn.core.internal.wc.DefaultSVNAuthenticationManager;
 import org.tmatesoft.svn.core.io.ISVNEditor;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
@@ -148,11 +150,25 @@ public class SubversionWagon extends AbstractWagon {
     }
 
     private void configureAuthenticationManager(SVNRepository repo) {
-        ISVNAuthenticationManager manager = SVNWCUtil.createDefaultAuthenticationManager(
-            SVNWCUtil.getDefaultConfigurationDirectory(), null, null, true);
+        ISVNAuthenticationManager manager =
+            new DefaultSVNAuthenticationManager(SVNWCUtil.getDefaultConfigurationDirectory(), true, null, null, null, null) {
+
+                public ISVNProxyManager getProxyManager(SVNURL url) throws SVNException {
+                    ISVNProxyManager pm = super.getProxyManager(url);
+                    if(pm!=null)    return pm;
+                    return SubversionWagon.this.getProxyManager(url);
+                }
+            };
 
         manager.setAuthenticationProvider(createAuthenticationProvider());
         repo.setAuthenticationManager(manager);
+    }
+
+    /**
+     * Gives the derived class a chance to set a proxy.
+     */
+    protected ISVNProxyManager getProxyManager(SVNURL url) {
+        return null;
     }
 
     /**
