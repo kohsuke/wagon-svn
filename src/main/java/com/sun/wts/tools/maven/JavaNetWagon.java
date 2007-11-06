@@ -30,8 +30,14 @@ public class JavaNetWagon extends SubversionWagon {
     protected ISVNAuthenticationProvider createAuthenticationProvider() {
         return new ISVNAuthenticationProvider() {
             public SVNAuthentication requestClientAuthentication(String kind, SVNURL url, String realm, SVNErrorMessage errorMessage, SVNAuthentication previousAuth, boolean authMayBeStored) {
+                if(previousAuth!=null)
+                    // svnkit will keep calling this method as long as we don't return null, so unless we do this
+                    // this becomes infinite loop.
+                    return null;
+
                 AuthenticationInfo auth = getAuthenticationInfo();
-                if(auth!=null)
+                // maven always seems to give you non-null auth, even if nothing is configured in your settings.xml
+                if(auth!=null && auth.getPassword()!=null)
                     return new SVNPasswordAuthentication(auth.getUserName(),auth.getPassword(),false);
 
                 // load ~/.java.net
