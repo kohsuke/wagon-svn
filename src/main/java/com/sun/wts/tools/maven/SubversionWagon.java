@@ -69,6 +69,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.EmptyStackException;
 
 /**
  * {@link Wagon} implementation for Subversion repository.
@@ -125,8 +126,11 @@ public class SubversionWagon extends AbstractWagon {
             configureAuthenticationManager(commitRepo);
 
             // prepare a commit
-            editor = commitRepo.getCommitEditor("Upload by wagon-svn", new CommitMediator());
+            ISVNEditor editor = commitRepo.getCommitEditor("Upload by wagon-svn", new CommitMediator());
             editor.openRoot(-1);
+            // if openRoot fails, Maven calls closeConnection anyway, so don't let the incorrect
+            // editor state show through.
+            this.editor = editor;
 
         } catch (SVNException e) {
             throw new ConnectionException("Unable to connect to "+url,e);
@@ -165,8 +169,12 @@ public class SubversionWagon extends AbstractWagon {
 
             // commit
             if(editor!=null) {
-                editor.closeDir();
-                editor.closeEdit();
+                try {
+                    editor.closeDir();
+                    editor.closeEdit();
+                } catch (EmptyStackException e) {
+                    e.printStackTrace(); // debug probe
+                }
                 editor = null;
             }
             
