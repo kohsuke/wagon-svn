@@ -120,7 +120,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
 
     public SVNAuthentication requestClientAuthentication(String kind, SVNURL url, String realm, SVNErrorMessage errorMessage, SVNAuthentication previousAuth, boolean authMayBeStored) {
         if (ISVNAuthenticationManager.PASSWORD.equals(kind)) {
-            if(auth!=null)
+            if(auth!=null && auth.getPassword()!=null)
                 return new SVNPasswordAuthentication(auth.getUserName(),auth.getPassword(),authMayBeStored);
 
             String name = null;
@@ -187,7 +187,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
                 return new SVNSSHAuthentication(name, new File(keyFile), passphrase, port, authMayBeStored);
             }
         } else if (ISVNAuthenticationManager.USERNAME.equals(kind)) {
-            if(auth!=null)
+            if(auth!=null && auth.getUserName()!=null)
                 return new SVNUserNameAuthentication(auth.getUserName(),authMayBeStored);
 
             printRealm(realm);
