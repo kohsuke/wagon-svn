@@ -42,5 +42,11 @@
       <implementation>com.sun.wts.tools.maven.SubversionWagon</implementation>
       <instantiation-strategy>per-lookup</instantiation-strategy>
     </component>
+    <component>
+      <role>org.apache.maven.wagon.Wagon</role>
+      <role-hint>java-net</role-hint>
+      <implementation>com.sun.wts.tools.maven.JavaNetWagon</implementation>
+      <instantiation-strategy>per-lookup</instantiation-strategy>
+    </component>
   </components>
 </component-set>

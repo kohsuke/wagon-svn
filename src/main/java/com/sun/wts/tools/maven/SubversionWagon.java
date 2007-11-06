@@ -50,6 +50,7 @@ import org.tmatesoft.svn.core.SVNDirEntry;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
+import org.tmatesoft.svn.core.auth.ISVNAuthenticationProvider;
 import org.tmatesoft.svn.core.internal.io.dav.DAVRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl;
@@ -70,7 +71,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * {@link Wagon} implementation for Subvesrion repository.
+ * {@link Wagon} implementation for Subversion repository.
  *
  * <h2>Implementation Note</h2>
  * <p>
@@ -101,9 +102,7 @@ public class SubversionWagon extends AbstractWagon {
     private final Set<String> pathAdded = new HashSet<String>();
 
     public void openConnection() throws ConnectionException, AuthenticationException {
-        Repository r = getRepository();
-        String url = r.getUrl();
-        url = url.substring(4); // cut off "svn:"
+        String url = getSubversionURL();
 
         try {
             SVNURL repoUrl = SVNURL.parseURIDecoded(url);
@@ -134,14 +133,30 @@ public class SubversionWagon extends AbstractWagon {
         }
     }
 
+    /**
+     * Figures out the full subversion URL to connect to.
+     */
+    protected String getSubversionURL() {
+        Repository r = getRepository();
+        String url = r.getUrl();
+        url = url.substring(4); // cut off "svn:"
+        return url;
+    }
+
     private void configureAuthenticationManager(SVNRepository repo) {
         ISVNAuthenticationManager manager = SVNWCUtil.createDefaultAuthenticationManager(
             SVNWCUtil.getDefaultConfigurationDirectory(), null, null, true);
-        
-        // TODO: figure out how to access MavenSession
-//        if(session.getSettings().isInteractiveMode())
-        manager.setAuthenticationProvider(new SVNConsoleAuthenticationProvider());
+
+        manager.setAuthenticationProvider(createAuthenticationProvider());
         repo.setAuthenticationManager(manager);
+    }
+
+    /**
+     * Creates an {@link ISVNAuthenticationProvider} to use.
+     */
+    protected ISVNAuthenticationProvider createAuthenticationProvider() {
+        return new SVNConsoleAuthenticationProvider(
+            isInteractive(), getAuthenticationInfo());
     }
 
     protected void closeConnection() throws ConnectionException {
