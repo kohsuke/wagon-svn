@@ -14,7 +14,7 @@ Why do I care?
     this module can be used to directly push artifacts into there, thereby avoiding additional
     subversion operations.
 
-Usage
+Using Wagon-svn with java.net
 
     First, you need to add the following entries into your POM:
 
@@ -25,7 +25,7 @@ Usage
       <extension>
         <groupId>org.jvnet.wagon-svn</groupId>
         <artifactId>wagon-svn</artifactId>
-        <version>1.2</version>
+        <version>1.4</version>
       </extension>
     </extensions>
   </build>
@@ -52,7 +52,7 @@ Usage
   <distributionManagement>
     <site>
       <id>xyz-www</id>
-      <url>svn:https://svn.dev.java.net/svn/xyz/trunk/www/</url>
+      <url>java-net:/xyz/trunk/www/</url>
     </site>
     ...
   </distributionManagement>
@@ -73,7 +73,7 @@ Usage
     <repository>
       <uniqueVersion>false</uniqueVersion>
       <id>java.net-maven2-repository</id>
-      <url>svn:https://svn.dev.java.net/svn/maven2-repository/trunk/www/repository/</url>
+      <url>java-net:/maven2-repository/trunk/www/repository/</url>
     </repository>
     ...
   </distributionManagement>
@@ -81,3 +81,53 @@ Usage
 
     This causes "<<<mvn deploy>>>" and "<<<mvn release:perform>>>" to deploy artifacts
     to the java.net maven2 repository.
+
+* Authentication
+
+    Be sure to set up <<<~/.java.net>>> as described in
+    {{{https://javanettasks.dev.java.net/nonav/maven/config.html}this document}},
+    so that Maven can use this username/password to log in.
+
+    Alternatively, you can specify your username/password
+    in your {{{http://maven.apache.org/settings.html#Servers}~/.m2/settings.xml}}, just like you do with
+    wagon-ssh.
+
+Using Wagon-svn with other subversion repositories
+
+* How to deploy Maven-generate site to a subversion repository
+
+    Suppose your subversion repository is <<<svn+ssh://server/repo/abc/docs>>>. To have "<<<maven site:deploy>>>" upload
+    contents to this folder, set the distribution management portion of the POM as follows:
+
+--------------------------------------------
+  <distributionManagement>
+    <site>
+      <id>abc-docs</id>
+      <url>svn:svn+ssh://server/repo/abc/docs</url>
+    </site>
+    ...
+  </distributionManagement>
+--------------------------------------------
+
+* How to deploy artifacts to a subversion repository
+
+    Suppose your subversion repository is <<<http://server/svn/maven/repo/>>>. To have "<<<maven deploy>>>" upload
+    artifacts to this folder, set the distribution management portion of the POM as follows:
+
+--------------------------------------------
+  <distributionManagement>
+    <repository>
+      <uniqueVersion>false</uniqueVersion>
+      <id>my-maven-repo</id>
+      <url>svn:http://server/svn/maven/repo/</url>
+    </repository>
+    ...
+  </distributionManagement>
+--------------------------------------------
+
+
+* Authentication
+
+    Wagon-svn can take information necessary for authentication in two ways. First, you can specify this
+    in your {{{http://maven.apache.org/settings.html#Servers}~/.m2/settings.xml}}, just like you do with
+    wagon-ssh. Second, if Maven is launched interactively, wagon-svn will prompt you interactively.
