@@ -70,6 +70,13 @@
     </repository>
   </repositories>
 
+  <licenses>
+    <license>
+      <url>http://www.sun.com/cddl/</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
   <!--
     TODO: mvn forked by "mvn release:perform" doesn't get interactive System.in. So we need a better authentication
     story.
