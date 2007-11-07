@@ -73,7 +73,7 @@
   <licenses>
     <license>
       <name>CDDL</name>
-      <url>http://www.sun.com/cddl/</url>
+      <url>http://www.netbeans.org/cddl.txt</url>
       <distribution>repo</distribution>
     </license>
   </licenses>
