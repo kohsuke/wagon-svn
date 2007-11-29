@@ -49,6 +49,7 @@ import org.codehaus.plexus.util.FileUtils;
 import org.tmatesoft.svn.core.SVNDirEntry;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.SVNCancelException;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationProvider;
 import org.tmatesoft.svn.core.auth.ISVNProxyManager;
@@ -105,38 +106,41 @@ public class SubversionWagon extends AbstractWagon {
     private final Set<String> pathAdded = new HashSet<String>();
 
     public void openConnection() throws ConnectionException, AuthenticationException {
+        try {
+            doOpenConnection();
+        } catch (SVNException e) {
+            throw new ConnectionException("Unable to connect to "+getSubversionURL(),e);
+        }
+    }
+
+    protected void doOpenConnection() throws SVNException {
         String url = getSubversionURL();
 
-        try {
-            SVNURL repoUrl = SVNURL.parseURIDecoded(url);
-            queryRepo = SVNRepositoryFactory.create(repoUrl);
-            configureAuthenticationManager(queryRepo);
+        SVNURL repoUrl = SVNURL.parseURIDecoded(url);
+        queryRepo = SVNRepositoryFactory.create(repoUrl);
+        configureAuthenticationManager(queryRepo);
 
-            // when URL is given like http://svn.dev.java.net/svn/abc/trunk/xyz, we need to compute
-            // repositoryRoot=http://svn.dev.java.net/abc and rootPath=/trunk/xyz
-            rootPath = repoUrl.getPath().substring(queryRepo.getRepositoryRoot(true).getPath().length());
-            if(rootPath.startsWith("/"))    rootPath=rootPath.substring(1);
+        // when URL is given like http://svn.dev.java.net/svn/abc/trunk/xyz, we need to compute
+        // repositoryRoot=http://svn.dev.java.net/abc and rootPath=/trunk/xyz
+        rootPath = repoUrl.getPath().substring(queryRepo.getRepositoryRoot(true).getPath().length());
+        if(rootPath.startsWith("/"))    rootPath=rootPath.substring(1);
 
-            // at least in case of file:// URL, the commit editor remembers the root path
-            // portion and that interferes with the way we work, so re-open the repository
-            // with the correct root.
-            SVNURL repoRoot = queryRepo.getRepositoryRoot(true);
-            queryRepo.setLocation(repoRoot,false);
+        // at least in case of file:// URL, the commit editor remembers the root path
+        // portion and that interferes with the way we work, so re-open the repository
+        // with the correct root.
+        SVNURL repoRoot = queryRepo.getRepositoryRoot(true);
+        queryRepo.setLocation(repoRoot,false);
 
-            // open another one for commit
-            commitRepo = SVNRepositoryFactory.create(repoRoot);
-            configureAuthenticationManager(commitRepo);
+        // open another one for commit
+        commitRepo = SVNRepositoryFactory.create(repoRoot);
+        configureAuthenticationManager(commitRepo);
 
-            // prepare a commit
-            ISVNEditor editor = commitRepo.getCommitEditor("Upload by wagon-svn", new CommitMediator());
-            editor.openRoot(-1);
-            // if openRoot fails, Maven calls closeConnection anyway, so don't let the incorrect
-            // editor state show through.
-            this.editor = editor;
-
-        } catch (SVNException e) {
-            throw new ConnectionException("Unable to connect to "+url,e);
-        }
+        // prepare a commit
+        ISVNEditor editor = commitRepo.getCommitEditor("Upload by wagon-svn", new CommitMediator());
+        editor.openRoot(-1);
+        // if openRoot fails, Maven calls closeConnection anyway, so don't let the incorrect
+        // editor state show through.
+        this.editor = editor;
     }
 
     /**

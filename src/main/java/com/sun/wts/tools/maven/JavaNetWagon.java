@@ -1,9 +1,13 @@
 package com.sun.wts.tools.maven;
 
 import org.apache.maven.wagon.authentication.AuthenticationInfo;
+import org.apache.maven.wagon.authentication.AuthenticationException;
 import org.apache.maven.wagon.repository.Repository;
+import org.apache.maven.wagon.ConnectionException;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.SVNCancelException;
+import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationProvider;
 import org.tmatesoft.svn.core.auth.ISVNProxyManager;
 import org.tmatesoft.svn.core.auth.SVNAuthentication;
@@ -31,6 +35,20 @@ public class JavaNetWagon extends SubversionWagon {
         url = url.substring(9); // cut off "java-net:"
 
         return "https://svn.dev.java.net/svn"+url;
+    }
+
+    @Override
+    public void openConnection() throws ConnectionException, AuthenticationException {
+        try {
+            doOpenConnection();
+        } catch (SVNCancelException e) {
+            if(getDotJavaNetFile().exists())
+                throw new ConnectionException("Unable to connect to "+getSubversionURL(),e);
+            else
+                throw new ConnectionException("Unable to connect to "+getSubversionURL()+" You need to create "+getDotJavaNetFile()+" See https://javanettasks.dev.java.net/nonav/maven/config.html",e);
+        } catch (SVNException e) {
+            throw new ConnectionException("Unable to connect to "+getSubversionURL(),e);
+        }
     }
 
     @Override
@@ -102,7 +120,7 @@ public class JavaNetWagon extends SubversionWagon {
         if(props!=null)    return props;
 
         // load ~/.java.net
-        File prop = new File(new File(System.getProperty("user.home")), ".java.net");
+        File prop = getDotJavaNetFile();
         if(prop.exists()) {
             fireTransferDebug("Using "+prop);
 
@@ -118,5 +136,9 @@ public class JavaNetWagon extends SubversionWagon {
         }
 
         return null;
+    }
+
+    private File getDotJavaNetFile() {
+        return new File(new File(System.getProperty("user.home")), ".java.net");
     }
 }
