@@ -133,6 +133,8 @@ public class JavaNetWagon extends SubversionWagon {
                 e.printStackTrace();
                 return null;
             }
+        } else {
+            fireTransferDebug(prop+" didn't exist");
         }
 
         return null;
