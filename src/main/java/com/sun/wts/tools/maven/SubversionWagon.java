@@ -246,7 +246,7 @@ public class SubversionWagon extends AbstractWagon {
     }
 
     public void put(File source, String destination) throws TransferFailedException, ResourceDoesNotExistException, AuthorizationException {
-        destination = combine(rootPath,destination);
+        destination = combine(rootPath,destination.replace('\\','/'));
         Resource res = new Resource(destination);
 
         firePutInitiated(res,source);
