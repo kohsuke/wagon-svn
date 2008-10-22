@@ -53,11 +53,14 @@ public class JavaNetWagon extends SubversionWagon {
 
     @Override
     protected ISVNProxyManager getProxyManager(SVNURL url) {
-        Properties props = loadProperties();
-        if(props!=null) {
-            final String proxyServer = props.getProperty("proxyServer");
-            final String proxyPort = props.getProperty("proxyPort");
+        Properties properties = loadProperties();
+        if(properties!=null) {
+            final String proxyServer = properties.getProperty("proxyServer");
+            final String proxyPort = properties.getProperty("proxyPort");
             if(proxyServer!=null) {
+                StringBuilder debugMessage = new StringBuilder("proxyServer = " + proxyServer);
+                debugMessage.append(proxyPort == null ? "" : ", proxyPort = " + proxyPort);
+                fireTransferDebug(debugMessage.toString());
                 return new ISVNProxyManager() {
                     public String getProxyHost() {
                         return proxyServer;
@@ -85,6 +88,7 @@ public class JavaNetWagon extends SubversionWagon {
         return super.getProxyManager(url);
     }
 
+    @Override
     protected ISVNAuthenticationProvider createAuthenticationProvider() {
         return new ISVNAuthenticationProvider() {
             public SVNAuthentication requestClientAuthentication(String kind, SVNURL url, String realm, SVNErrorMessage errorMessage, SVNAuthentication previousAuth, boolean authMayBeStored) {
