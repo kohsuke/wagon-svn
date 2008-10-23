@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 1997-2007 Sun Microsystems, Inc. All rights reserved.
+ * Copyright 1997-2008 Sun Microsystems, Inc. All rights reserved.
  *
  * The contents of this file are subject to the terms of either the GNU
  * General Public License Version 2 only ("GPL") or the Common Development
@@ -49,7 +49,6 @@ import org.codehaus.plexus.util.FileUtils;
 import org.tmatesoft.svn.core.SVNDirEntry;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.SVNCancelException;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationProvider;
 import org.tmatesoft.svn.core.auth.ISVNProxyManager;
@@ -136,11 +135,11 @@ public class SubversionWagon extends AbstractWagon {
         configureAuthenticationManager(commitRepo);
 
         // prepare a commit
-        ISVNEditor editor = commitRepo.getCommitEditor("Upload by wagon-svn", new CommitMediator());
-        editor.openRoot(-1);
+        ISVNEditor svnEditor = commitRepo.getCommitEditor("Upload by wagon-svn", new CommitMediator());
+        svnEditor.openRoot(-1);
         // if openRoot fails, Maven calls closeConnection anyway, so don't let the incorrect
         // editor state show through.
-        this.editor = editor;
+        this.editor = svnEditor;
     }
 
     /**
@@ -157,6 +156,7 @@ public class SubversionWagon extends AbstractWagon {
         ISVNAuthenticationManager manager =
             new DefaultSVNAuthenticationManager(SVNWCUtil.getDefaultConfigurationDirectory(), true, null, null, null, null) {
 
+                @Override
                 public ISVNProxyManager getProxyManager(SVNURL url) throws SVNException {
                     ISVNProxyManager pm = super.getProxyManager(url);
                     if(pm!=null)    return pm;
@@ -334,10 +334,12 @@ public class SubversionWagon extends AbstractWagon {
         }
     }
 
+    @Override
     public boolean supportsDirectoryCopy() {
         return true;
     }
 
+    @Override
     public void putDirectory(File sourceDirectory, String destinationDirectory) throws TransferFailedException, ResourceDoesNotExistException, AuthorizationException {
         try {
             List<String> files = FileUtils.getFileNames( sourceDirectory, "**/**", "", false );
