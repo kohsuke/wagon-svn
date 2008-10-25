@@ -131,3 +131,36 @@ Using Wagon-svn with other subversion repositories
     Wagon-svn can take information necessary for authentication in two ways. First, you can specify this
     in your {{{http://maven.apache.org/settings.html#Servers}~/.m2/settings.xml}}, just like you do with
     wagon-ssh. Second, if Maven is launched interactively, wagon-svn will prompt you interactively.
+
+
+Using Wagon-svn with deploy:deploy-file
+
+    Because wagon-svn is not a built-in wagon transport, making it work with <<<mvn deploy:deploy-file>>> requires
+    one extra step. First, save the following POM by some name, such as <<<deploy.pom>>>
+
+--------------------------------------------
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>dummy</groupId>
+  <artifactId>wagn-svn-deploy-pom/artifactId>
+  <packaging>pom</packaging>
+  <version>1</version>
+
+  <build>
+    <extensions>
+      <extension>
+        <groupId>org.jvnet.wagon-svn</groupId>
+        <artifactId>wagon-svn</artifactId>
+        <version>1.8</version>
+      </extension>
+    </extensions>
+  </build>
+</project>
+--------------------------------------------
+
+    Then invoke the <<<mvn deploy:depoloy-file>>> with additional <<<-f path/to/deploy.pom>>>, such as:
+
+--------------------------------------------
+mvn deploy:deploy-file -f deploy.pom -DpomFile=my.pom -Dfile=my.jar -Durl=...
+--------------------------------------------
+
