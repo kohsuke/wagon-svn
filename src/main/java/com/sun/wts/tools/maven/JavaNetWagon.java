@@ -99,17 +99,18 @@ public class JavaNetWagon extends SubversionWagon {
                     return null;
                 }
 
-                AuthenticationInfo auth = getAuthenticationInfo();
-                // maven always seems to give you non-null auth, even if nothing is configured in your settings.xml
-                if(auth!=null && auth.getPassword()!=null)
-                    return new SVNPasswordAuthentication(auth.getUserName(),auth.getPassword(),false);
-
-                // load ~/.java.net
+                // if ~/.java.net, trust that the most
                 Properties props = loadProperties();
                 if(props!=null)
                     return new SVNPasswordAuthentication(
                             props.getProperty("userName"),
                             props.getProperty("password"),false);
+
+                // fall back to ~/.m2/settings.xml
+                AuthenticationInfo auth = getAuthenticationInfo();
+                // maven always seems to give you non-null auth, even if nothing is configured in your settings.xml
+                if(auth!=null && auth.getPassword()!=null)
+                    return new SVNPasswordAuthentication(auth.getUserName(),auth.getPassword(),false);
 
                 return null;
             }
