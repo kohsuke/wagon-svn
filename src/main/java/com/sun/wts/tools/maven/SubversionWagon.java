@@ -216,6 +216,7 @@ public class SubversionWagon extends AbstractWagon {
             fireGetStarted( res, destination );
 
             Map m = new HashMap();
+            destination.getParentFile().mkdirs();
             FileOutputStream fos = new FileOutputStream(destination);
             try {
                 queryRepo.getFile(combine(rootPath,resourceName),-1/*head*/,m, fos);
