@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.jvnet.wagon-svn</groupId>
   <artifactId>wagon-svn</artifactId>
-  <version>1.12</version>
+  <version>1.13-SNAPSHOT</version>
   <name>Maven Wagon for Subversion</name>
   <description>
     Wagon that gets and puts artifacts using Subversion
@@ -21,8 +21,8 @@
   </distributionManagement>
 
   <scm>
-    <connection>scm:svn:svn+ssh://janey@svn.java.net/wagon~svn/tags/wagon-svn-1.12</connection>
-    <developerConnection>scm:svn:svn+ssh://janey@svn.java.net/wagon~svn/tags/wagon-svn-1.12</developerConnection>
+    <connection>scm:svn:svn+ssh://janey@svn.java.net/wagon~svn/trunk/wagon-svn/</connection>
+    <developerConnection>scm:svn:svn+ssh://janey@svn.java.net/wagon~svn/trunk/wagon-svn/</developerConnection>
   </scm>
 
   <dependencies>
