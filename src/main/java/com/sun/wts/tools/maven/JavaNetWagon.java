@@ -34,7 +34,7 @@ public class JavaNetWagon extends SubversionWagon {
         String url = r.getUrl();
         url = url.substring(9); // cut off "java-net:"
 
-        return "https://svn.dev.java.net/svn"+url;
+        return "https://svn.java.net/svn"+url;
     }
 
     @Override
