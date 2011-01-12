@@ -21,8 +21,8 @@
   </distributionManagement>
 
   <scm>
-    <connection>scm:svn:https://svn.dev.java.net/svn/wagon-svn/trunk/wagon-svn/</connection>
-    <developerConnection>scm:svn:https://svn.dev.java.net/svn/wagon-svn/trunk/wagon-svn/</developerConnection>
+    <connection>scm:svn:svn+ssh://janey@svn.java.net/wagon~svn/trunk/wagon-svn/</connection>
+    <developerConnection>scm:svn:svn+ssh://janey@svn.java.net/wagon~svn/trunk/wagon-svn/</developerConnection>
   </scm>
 
   <dependencies>
